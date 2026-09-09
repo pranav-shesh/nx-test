@@ -1,8 +1,10 @@
 {
   "generators": {
     "@nx/angular:application": {
-      "unitTestRunner": "jest",
-      "e2eTestRunner": "cypress"
+      "e2eTestRunner": "cypress",
+      "linter": "eslint",
+      "style": "css",
+      "unitTestRunner": "jest"
     },
     "@nx/angular:library": {
       "unitTestRunner": "jest"
@@ -100,6 +102,14 @@
     },
     "serve": {
       "dependsOn": ["...", "^codegen"]
+    },
+    "@angular/build:application": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
     }
   },
   "namedInputs": {

@@ -61,3 +61,7 @@ obj/
 # `nx build ProductsApi` emits into obj/, and the Nx Cloud agents have a .NET
 # SDK (see .nx/workflows/agents.yaml) so CI regenerates both.
 libs/shared/product/types/src/generated/
+
+.angular
+
+test-output
