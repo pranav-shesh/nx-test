@@ -49,6 +49,9 @@
     },
     {
       "path": "./apps/lomj"
+    },
+    {
+      "path": "./apps/nodesss"
     }
   ]
 }
