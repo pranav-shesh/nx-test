@@ -51,6 +51,20 @@ jobs:
           elif [[ -f package-lock.json ]]; then npm ci
           else echo 'A supported lockfile is required.' >&2; exit 2
           fi
+      - name: Ensure Nx-compatible ESLint
+        shell: bash
+        run: |
+          ESLINT_MAJOR=$(node -p "(() => { try { return Number(require('eslint/package.json').version.split('.')[0] || 0); } catch { return 0; } })()")
+          if [[ "$ESLINT_MAJOR" -ge 9 ]]; then
+            echo "eslint major version $ESLINT_MAJOR is already compatible with Nx."
+            exit 0
+          fi
+          echo "Upgrading eslint from major version $ESLINT_MAJOR to ^9 for Nx compatibility."
+          if [[ -f pnpm-lock.yaml ]]; then pnpm add -Dw eslint@^9.0.0
+          elif [[ -f yarn.lock ]]; then yarn add -D eslint@^9.0.0
+          elif [[ -f package-lock.json ]]; then npm install --save-dev eslint@^9.0.0 --legacy-peer-deps
+          else echo 'A supported lockfile is required.' >&2; exit 2
+          fi
       - name: Generate application with Nx
         env:
           NAME: "${{ inputs.project_name }}"
