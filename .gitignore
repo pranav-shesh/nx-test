@@ -65,3 +65,7 @@ libs/shared/product/types/src/generated/
 .angular
 
 test-output
+
+# Next.js
+.next
+out

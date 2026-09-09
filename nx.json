@@ -82,6 +82,12 @@
     },
     "@schematics/angular:resolver": {
       "typeSeparator": "."
+    },
+    "@nx/next": {
+      "application": {
+        "style": "css",
+        "linter": "eslint"
+      }
     }
   },
   "defaultProject": "products",
@@ -179,7 +185,18 @@
         "typecheckTargetName": "rsbuild:typecheck"
       }
     },
-    "@nx/dotnet"
+    "@nx/dotnet",
+    {
+      "plugin": "@nx/next/plugin",
+      "options": {
+        "startTargetName": "start",
+        "buildTargetName": "build",
+        "devTargetName": "dev",
+        "serveStaticTargetName": "serve-static",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps"
+      }
+    }
   ],
   "defaultBase": "master",
   "analytics": true,
