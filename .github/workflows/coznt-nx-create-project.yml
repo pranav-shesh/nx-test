@@ -51,7 +51,22 @@ jobs:
           elif [[ -f package-lock.json ]]; then npm ci
           else echo 'A supported lockfile is required.' >&2; exit 2
           fi
+      - name: Detect workspace package manager
+        shell: bash
+        run: |
+          if [[ -f pnpm-lock.yaml ]]; then
+            echo "PACKAGE_MANAGER=pnpm" >> "$GITHUB_ENV"
+          elif [[ -f yarn.lock ]]; then
+            echo "PACKAGE_MANAGER=yarn" >> "$GITHUB_ENV"
+          elif [[ -f package-lock.json ]]; then
+            echo "PACKAGE_MANAGER=npm" >> "$GITHUB_ENV"
+          else
+            echo 'A supported lockfile is required.' >&2
+            exit 2
+          fi
       - name: Ensure Nx-compatible ESLint
+        env:
+          YARN_ENABLE_IMMUTABLE_INSTALLS: "false"
         shell: bash
         run: |
           ESLINT_MAJOR=$(node -p "(() => { try { return Number(require('eslint/package.json').version.split('.')[0] || 0); } catch { return 0; } })()")
@@ -60,9 +75,9 @@ jobs:
             exit 0
           fi
           echo "Upgrading eslint from major version $ESLINT_MAJOR to ^9 for Nx compatibility."
-          if [[ -f pnpm-lock.yaml ]]; then pnpm add -Dw eslint@^9.0.0
-          elif [[ -f yarn.lock ]]; then yarn add -D eslint@^9.0.0
-          elif [[ -f package-lock.json ]]; then npm install --save-dev eslint@^9.0.0 --legacy-peer-deps
+          if [[ "$PACKAGE_MANAGER" == "pnpm" ]]; then pnpm add -Dw eslint@^9.0.0
+          elif [[ "$PACKAGE_MANAGER" == "yarn" ]]; then yarn add -D eslint@^9.0.0
+          elif [[ "$PACKAGE_MANAGER" == "npm" ]]; then npm install --save-dev eslint@^9.0.0 --legacy-peer-deps
           else echo 'A supported lockfile is required.' >&2; exit 2
           fi
       - name: Generate application with Nx
@@ -70,6 +85,7 @@ jobs:
           NAME: "${{ inputs.project_name }}"
           TEMPLATE: "${{ inputs.template }}"
           NX_IGNORE_UNSUPPORTED_TS_SETUP: "true"
+          YARN_ENABLE_IMMUTABLE_INSTALLS: "false"
         shell: bash
         run: |
           case "$TEMPLATE" in
@@ -78,14 +94,27 @@ jobs:
             node) PLUGIN='@nx/node'; GENERATOR='@nx/node:application' ;;
             *) echo "Unsupported template: $TEMPLATE" >&2; exit 2 ;;
           esac
-          node -e "require.resolve('$PLUGIN/package.json')" >/dev/null 2>&1 || npx nx add "$PLUGIN" --no-interactive
-          npx nx generate "$GENERATOR" "apps/$NAME" --e2eTestRunner=none --no-interactive
+          if [[ "$PACKAGE_MANAGER" == "pnpm" ]]; then
+            node -e "require.resolve('$PLUGIN/package.json')" >/dev/null 2>&1 || pnpm exec nx add "$PLUGIN" --no-interactive
+            pnpm exec nx generate "$GENERATOR" "apps/$NAME" --e2eTestRunner=none --no-interactive
+          elif [[ "$PACKAGE_MANAGER" == "yarn" ]]; then
+            node -e "require.resolve('$PLUGIN/package.json')" >/dev/null 2>&1 || yarn nx add "$PLUGIN" --no-interactive
+            yarn nx generate "$GENERATOR" "apps/$NAME" --e2eTestRunner=none --no-interactive
+          elif [[ "$PACKAGE_MANAGER" == "npm" ]]; then
+            node -e "require.resolve('$PLUGIN/package.json')" >/dev/null 2>&1 || npx nx add "$PLUGIN" --no-interactive
+            npx nx generate "$GENERATOR" "apps/$NAME" --e2eTestRunner=none --no-interactive
+          else
+            echo 'A supported lockfile is required.' >&2
+            exit 2
+          fi
       - name: Synchronize dependency lockfile
+        env:
+          YARN_ENABLE_IMMUTABLE_INSTALLS: "false"
         shell: bash
         run: |
-          if [[ -f pnpm-lock.yaml ]]; then pnpm install --no-frozen-lockfile
-          elif [[ -f yarn.lock ]]; then yarn install
-          elif [[ -f package-lock.json ]]; then npm install --package-lock-only --legacy-peer-deps
+          if [[ "$PACKAGE_MANAGER" == "pnpm" ]]; then pnpm install --no-frozen-lockfile
+          elif [[ "$PACKAGE_MANAGER" == "yarn" ]]; then yarn install
+          elif [[ "$PACKAGE_MANAGER" == "npm" ]]; then npm install --package-lock-only --legacy-peer-deps
           else echo 'A supported lockfile is required.' >&2; exit 2
           fi
       - name: Commit and push
